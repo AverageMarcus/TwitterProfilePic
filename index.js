@@ -24,7 +24,7 @@ const handleResponse = (profileURLs, req, res) => {
 
 server.use(restify.plugins.queryParser());
 
-server.get(/(\/|\/index.html)$/, function(req, res) {
+server.get(/^(\/|\/index.html)$/, function(req, res) {
   fs.readFile(`${__dirname}/README.md`, { encoding: 'utf8' }, (err, data) => {
     return res.sendRaw(`
     <html>
