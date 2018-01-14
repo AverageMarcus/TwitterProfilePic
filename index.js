@@ -34,11 +34,22 @@ const getProfileURLs = async handle => {
   });
 };
 
-server.use(restify.plugins.queryParser());
+const handleResponse = (profileURLs, req, res) => {
+  if (req.getContentType() === 'application/json') {
+    return res.send(profileURLs);
+  } else {
+    const imageURL = profileURLs[req.query.size] || profileURLs.original;
 
-// Handle some stuff we dont have
-server.get('favicon.ico', (req, res) => res.send(404));
-server.get('sw.js', (req, res) => res.send(404));
+    request
+      .get(imageURL)
+      .on('error', function(err) {
+        console.log(err);
+      })
+      .pipe(res);
+  }
+};
+
+server.use(restify.plugins.queryParser());
 
 server.get('/:handle', async function (req, res) {
   if (!req.params.handle) {
@@ -55,18 +66,15 @@ server.get('/:handle', async function (req, res) {
     };
   }
 
-  if (req.getContentType() === 'application/json') {
-    return res.send(profileURLs);
-  } else {
-    const imageURL = profileURLs[req.query.size] || profileURLs.original;
+  return handleResponse(profileURLs, req, res);
+});
 
-    request
-      .get(imageURL)
-      .on('error', function(err) {
-        console.log(err);
-      })
-      .pipe(res);
-  }
+server.get('/.+', function (req, res) {
+  let profileURLs = {
+    original: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'
+  };
+
+  return handleResponse(profileURLs, req, res);
 });
 
 server.listen(process.env.PORT || 9090, function () {
