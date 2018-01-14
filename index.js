@@ -2,37 +2,7 @@ require('dotenv').config();
 const request = require('request');
 const restify = require('restify');
 const server = restify.createServer();
-const Twitter = require('twitter');
-const twitter = new Twitter({
-  consumer_key: process.env.TWITTER_CONSUMER_KEY,
-  consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-  access_token_key: process.env.TWITTER_ACCESS_TOKEN_KEY,
-  access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
-});
-
-const getProfileURLs = async handle => {
-  return new Promise((resolve, reject) => {
-    if (handle[0] === '@') handle = handle.slice(1);
-    twitter.get('users/show', {
-      user_id: handle,
-      screen_name: handle
-    }, (err, user, response) => {
-      if (err || !user) {
-        return reject(err);
-      }
-
-      const profileURLs = {
-        normal: user.profile_image_url_https,
-        bigger: user.profile_image_url_https.replace('_normal.', '_bigger.'),
-        mini: user.profile_image_url_https.replace('_normal.', '_mini.'),
-        original: user.profile_image_url_https.replace('_normal.', '.'),
-        '200x200': user.profile_image_url_https.replace('_normal.', '_200x200.'),
-        '400x400': user.profile_image_url_https.replace('_normal.', '_400x400.')
-      }
-      return resolve(profileURLs);
-    });
-  });
-};
+const Twitter = require('./twitter');
 
 const handleResponse = (profileURLs, req, res) => {
   if (req.getContentType() === 'application/json') {
@@ -56,25 +26,13 @@ server.get('/:handle', async function (req, res) {
     return res.send(400);
   }
 
-  let profileURL;
-
-  try {
-    profileURLs = await getProfileURLs(req.params.handle);
-  } catch (err) {
-    profileURLs = {
-      original: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'
-    };
-  }
+  const profileURLs = await Twitter.getProfileURLs(req.params.handle);
 
   return handleResponse(profileURLs, req, res);
 });
 
 server.get('/.+', function (req, res) {
-  let profileURLs = {
-    original: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'
-  };
-
-  return handleResponse(profileURLs, req, res);
+  return handleResponse(Twitter.defaultProfile, req, res);
 });
 
 server.listen(process.env.PORT || 9090, function () {
