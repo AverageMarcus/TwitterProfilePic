@@ -10,10 +10,28 @@ const twitter = new Twitter({
 const defaultProfile = {
   original: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'
 };
+const rateLimit = {
+  remaining: Infinity,
+  reset: new Date()
+};
 
 const cleanHandle = handle => (handle[0] === '@') ? handle.slice(1) : handle;
+const sleep = timeout => new Promise(resolve => setTimeout(resolve, timeout * 1000));
+const handleRateLimit = async () => {
+  if (rateLimit.remaining <= 1) {
+    console.log('Rate limit hit, waiting until reset');
+    await sleep(rateLimit.reset - new Date());
+  } else if (rateLimit.remaining < 10) {
+    console.log('Waiting for 10s due to rate limiting');
+    await sleep(10);
+  } else if (rateLimit.remaining < 500) {
+    console.log('Waiting for 1s due to rate limiting');
+    await sleep(1);
+  }
+};
 
 const fetchFromTwitter = async handle => {
+  await handleRateLimit();
   return new Promise((resolve, reject) => {
     twitter.get('users/show', {
       user_id: handle,
@@ -22,6 +40,9 @@ const fetchFromTwitter = async handle => {
       if (err || !user) {
         return resolve(defaultProfile);
       }
+
+      rateLimit.remaining = response.headers['x-rate-limit-remaining'];
+      rateLimit.reset = new Date(response.headers['x-rate-limit-reset'] * 1000);
 
       const profileURLs = {
         normal: user.profile_image_url_https,
