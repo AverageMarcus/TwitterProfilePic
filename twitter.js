@@ -7,16 +7,15 @@ const twitter = new Twitter({
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 });
 
-const defaultProfile = {
-  original: 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'
-};
 const rateLimit = {
   remaining: Infinity,
   reset: new Date()
 };
 
 const cleanHandle = handle => (handle[0] === '@') ? handle.slice(1) : handle;
+
 const sleep = timeout => new Promise(resolve => setTimeout(resolve, timeout * 1000));
+
 const handleRateLimit = async () => {
   if (rateLimit.remaining <= 1) {
     console.log('Rate limit hit, waiting until reset');
@@ -29,6 +28,19 @@ const handleRateLimit = async () => {
     await sleep(1);
   }
 };
+
+const generateSizes = url => {
+  return {
+    normal: url,
+    bigger: url.replace('_normal.', '_bigger.'),
+    mini: url.replace('_normal.', '_mini.'),
+    original: url.replace('_normal.', '.'),
+    '200x200': url.replace('_normal.', '_200x200.'),
+    '400x400': url.replace('_normal.', '_400x400.')
+  };
+};
+
+const defaultProfile = generateSizes('https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png');
 
 const fetchFromTwitter = async handle => {
   await handleRateLimit();
@@ -44,14 +56,7 @@ const fetchFromTwitter = async handle => {
       rateLimit.remaining = response.headers['x-rate-limit-remaining'];
       rateLimit.reset = new Date(response.headers['x-rate-limit-reset'] * 1000);
 
-      const profileURLs = {
-        normal: user.profile_image_url_https,
-        bigger: user.profile_image_url_https.replace('_normal.', '_bigger.'),
-        mini: user.profile_image_url_https.replace('_normal.', '_mini.'),
-        original: user.profile_image_url_https.replace('_normal.', '.'),
-        '200x200': user.profile_image_url_https.replace('_normal.', '_200x200.'),
-        '400x400': user.profile_image_url_https.replace('_normal.', '_400x400.')
-      }
+      const profileURLs = generateSizes(user.profile_image_url_https);
       // Try and mitigate hitting rate limit
       cache.save(handle, profileURLs);
       return resolve(profileURLs);
