@@ -41,3 +41,16 @@ Result:
     "400x400": "https://pbs.twimg.com/profile_images/776738772759277569/hfaM5zhA_400x400.jpg"
 }
 ```
+
+## Requirements
+
+[Redis](https://redis.io/) is required if caching is wanted. You will also need Twitter credentials that can be created here: [https://apps.twitter.com/](https://apps.twitter.com/)
+
+Environment Variables:
+```
+TWITTER_CONSUMER_KEY=
+TWITTER_CONSUMER_SECRET=
+TWITTER_ACCESS_TOKEN_KEY=
+TWITTER_ACCESS_TOKEN_SECRET=
+REDIS_URL=
+```
